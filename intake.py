@@ -15,7 +15,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 style = {
     'padding': '3em',
-    'backgroundColor': '#f0f0f0',  # light gray background color
+    'backgroundColor': '#e3d8df',  
     'fontFamily': 'Arial, sans-serif'
 }
 
