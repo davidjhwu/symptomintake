@@ -4,14 +4,15 @@ from dash import html
 import dash_table
 from dash.dependencies import Input, Output, State
 import pandas as pd
-import pdfkit
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
+# import pdfkit
+# import smtplib
+# from email.mime.multipart import MIMEMultipart
+# from email.mime.base import MIMEBase
+# from email import encoders
 external_stylesheets = ['https://maxcdn.bootstrapcdn.com/bootswatch/4.5.2/journal/bootstrap.min.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
 
 style = {
     'padding': '3em',
@@ -374,29 +375,29 @@ def update_results_table(n_clicks, *responses):
 
     return data
 
-def send_email(to_email, pdf_file):
-    from_email = "you@example.com"  # Your email address. 
-    password = "your_password"  # Your email password. Can consider using SendGrid for better security.
+# def send_email(to_email, pdf_file):
+#     from_email = "you@example.com"  # Your email address. 
+#     password = "your_password"  # Your email password. Can consider using SendGrid for better security.
 
-    # Create a multipart email message
-    msg = MIMEMultipart()
-    msg["From"] = from_email
-    msg["To"] = to_email
-    msg["Subject"] = "Patient Symptom Table PDF"
+#     # Create a multipart email message
+#     msg = MIMEMultipart()
+#     msg["From"] = from_email
+#     msg["To"] = to_email
+#     msg["Subject"] = "Patient Symptom Table PDF"
 
-    # Attach the PDF file
-    with open(pdf_file, "rb") as file:
-        attachment = MIMEBase("application", "octet-stream")
-        attachment.set_payload(file.read())
-        encoders.encode_base64(attachment)
-        attachment.add_header("Content-Disposition", f"attachment; filename={pdf_file}")
-        msg.attach(attachment)
+#     # Attach the PDF file
+#     with open(pdf_file, "rb") as file:
+#         attachment = MIMEBase("application", "octet-stream")
+#         attachment.set_payload(file.read())
+#         encoders.encode_base64(attachment)
+#         attachment.add_header("Content-Disposition", f"attachment; filename={pdf_file}")
+#         msg.attach(attachment)
 
-    # Send the email
-    server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-    server.login(from_email, password)
-    server.sendmail(from_email, to_email, msg.as_string())
-    server.quit()
+#     # Send the email
+#     server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+#     server.login(from_email, password)
+#     server.sendmail(from_email, to_email, msg.as_string())
+#     server.quit()
 
 
 if __name__ == '__main__':
