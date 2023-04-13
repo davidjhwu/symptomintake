@@ -13,15 +13,17 @@ external_stylesheets = ['https://maxcdn.bootstrapcdn.com/bootswatch/4.5.2/journa
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-style = {'padding': '1.5em'}
+style = {
+    'padding': '3em',
+    'backgroundColor': '#f0f0f0',  # light gray background color
+    'fontFamily': 'Arial, sans-serif'
+}
 
 app.layout = html.Div([
-  html.P([html.Br()]),
+dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
   html.P([html.Br()]),
   dcc.Markdown('#### Please answer the following questions about your current symptoms'),
-  dcc.Markdown('#### Questions are for patients undergoing prostate radiotherapy'),
   dcc.Markdown('Each form must be carefully filled out, results will be sent to your physician'),
-  html.P([html.Br()]),
   dcc.Markdown('#### General Questions'),
   dcc.Markdown('###### How many radiation treatments have you had? It\'s okay if you don\'t know.'),
   dcc.Input(
@@ -29,8 +31,8 @@ app.layout = html.Div([
       placeholder='Enter a value',
       type='text',
       value='ie 3, or I don\'t know'),
-
-  dcc.Markdown('#### Symptom Questions'),
+  html.P([html.Br()]),
+  dcc.Markdown('### Symptom Questions'),
   dcc.Markdown('For each of the following question I\'m going to ask you to grade your symptoms.'),
   dcc.Markdown('#### Gas'),
     dcc.Markdown('###### In the last 7 days, did you have any INCREASED PASSING OF GAS (FLATULENCE)?'),
@@ -101,6 +103,7 @@ app.layout = html.Div([
         value=None,
         labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
+  html.P([html.Br()]),
   dcc.Markdown('Now let\'s discuss your urinary symptoms.'),
   dcc.Markdown('#### Urinary Symptoms'),
     dcc.Markdown('##### Painful Urination'),
@@ -217,37 +220,92 @@ app.layout = html.Div([
         value=None,
         labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
-  html.P([html.Br()]),  
+    html.P([html.Br()]),
+    dcc.Markdown("#### Radiation Skin Reaction"),
+    dcc.Markdown(
+        "###### In the last 7 days, what was the SEVERITY of your SKIN BURNS FROM RADIATION at their WORST?"
+    ),
+    dcc.RadioItems(
+        id="radiation_skin_reaction_severity",
+        options=[
+            {"label": "None", "value": "None"},
+            {"label": "Mild", "value": "Mild"},
+            {"label": "Moderate", "value": "Moderate"},
+            {"label": "Severe", "value": "Severe"},
+            {"label": "Very severe", "value": "Very severe"},
+            {"label": "Not applicable", "value": "Not applicable"},
+        ],
+        value=None,
+        labelStyle={"display": "inline-block", "margin-right": "10px"},
+    ),
+    html.P([html.Br()]),
+    dcc.Markdown("#### Fatigue"),
+    dcc.Markdown(
+        "###### In the last 7 days, what was the SEVERITY of your FATIGUE, TIREDNESS, OR LACK OF ENERGY at its WORST?"
+    ),
+    dcc.RadioItems(
+        id="fatigue_severity",
+        options=[
+            {"label": "None", "value": "None"},
+            {"label": "Mild", "value": "Mild"},
+            {"label": "Moderate", "value": "Moderate"},
+            {"label": "Severe", "value": "Severe"},
+            {"label": "Very severe", "value": "Very severe"},
+        ],
+        value=None,
+        labelStyle={"display": "inline-block", "margin-right": "10px"},
+    ),
+
+    dcc.Markdown(
+        "###### In the last 7 days, how much did FATIGUE, TIREDNESS, OR LACK OF ENERGY INTERFERE with your usual or daily activities?"
+    ),
+    dcc.RadioItems(
+        id="fatigue_interference",
+        options=[
+            {"label": "Not at all", "value": "Not at all"},
+            {"label": "A little bit", "value": "A little bit"},
+            {"label": "Somewhat", "value": "Somewhat"},
+            {"label": "Quite a bit", "value": "Quite a bit"},
+        ],
+        value=None,
+        labelStyle={"display": "inline-block", "margin-right": "10px"},
+    ),
+    html.P([html.Br()]),
+    dcc.Markdown('#### Last Question!'),
+    dcc.Markdown('###### Finally, do you have any other symptoms that you wish to report?'),
+    dcc.Input(
+        id='additional_symptoms',
+        placeholder='Type here...',
+        type='text',
+        value=''),
+    html.P([html.Br()]),  
 
   html.Br(),
     html.Button('Submit', id='submit_button', n_clicks=0),
     html.Br(),
     html.Br(),
-    dcc.Markdown('#### Survey Results'),
+    dcc.Markdown('### Survey Results'),
     dash_table.DataTable(
         id='results_table',
-        columns=[
-            {'name': 'Question', 'id': 'question'},
-            {'name': 'Answer', 'id': 'answer'}
-        ],
+        columns=[        {'name': 'Question', 'id': 'question'},        {'name': 'Answer', 'id': 'answer'}    ],
         data=[],
         style_cell={
             'whiteSpace': 'normal',
             'height': 'auto',
+            'textAlign': 'center',
         },
-        style_data_conditional=[
-            {
-                'if': {'row_index': 'odd'},
-                'backgroundColor': 'rgb(248, 248, 248)'
-            }
-        ],
+        style_data_conditional=[        {            'if': {'row_index': 'odd'},            'backgroundColor': 'rgb(248, 248, 248)'        }    ],
         style_header={
             'backgroundColor': 'rgb(230, 230, 230)',
             'fontWeight': 'bold'
+        },
+        style_table={
+            'margin': '0 auto',
+            'width': '50%'
         }
-),
-  html.P([html.Br()])
-])
+    ),
+    html.P([html.Br()])
+    ], style=style)
 
 @app.callback(
     Output('results_table', 'data'),
@@ -265,7 +323,11 @@ app.layout = html.Div([
     State('urinary_frequency_interference', 'value'),
     State('urine_color_change', 'value'),
     State('urinary_incontinence_frequency', 'value'),
-    State('urinary_incontinence_interference', 'value')
+    State('urinary_incontinence_interference', 'value'),
+    State('radiation_skin_reaction_severity', 'value'),
+    State('fatigue_severity', 'value'),
+    State('fatigue_interference', 'value'),
+    State('additional_symptoms', 'value')
 )
 def update_results_table(n_clicks, *responses):
     if n_clicks == 0:
@@ -286,9 +348,16 @@ def update_results_table(n_clicks, *responses):
         'Urine color change',
         'Urinary incontinence frequency',
         'Urinary incontinence interference',
+        'Radiation skin reaction severity',
+        'Fatigue severity',
+        'Fatigue interference',
+        'Additional symptoms',
     ]
 
     data = [{'question': question, 'answer': response} for question, response in zip(questions, responses)]
+
+    return data
+
 
     # Convert data to a Pandas DataFrame
     df = pd.DataFrame(data)
