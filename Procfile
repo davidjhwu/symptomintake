@@ -1,1 +1,1 @@
-web: gunicorn intake.py:app.server
+web: gunicorn intake.py:server
