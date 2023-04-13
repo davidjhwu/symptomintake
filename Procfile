@@ -1,1 +1,1 @@
-web: gunicorn intake.py:server
+web: gunicorn intake:server -t 120
