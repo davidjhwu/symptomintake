@@ -288,9 +288,9 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         type='text',
         value=''),
     html.P([html.Br()]),  
-    html.Div(className="d-grid gap-2", children=[
+    html.Div(className="d-grid gap-2 d-flex justify-content-center", children=[
         dcc.Loading(id="loading", type="circle", children=[
-            html.Button("Submit", id="submit_button", n_clicks=0, className="btn btn-lg btn-primary")
+            html.Button("Submit", id="submit_button", n_clicks=0, className="btn btn-lg btn-primary", style={"width": "200px"})
         ]),
     ]),
     html.Br(),
@@ -304,7 +304,9 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         ], className='card border-primary mb-3', style={'max-width': '60rem', 'margin': '3 auto'})
     ], className='summary-container mx-auto', style={'width': '60%'}),
     html.Br(),
-    dcc.Markdown('### Survey Results'), #aligned to center of page
+    html.Div([
+        dcc.Markdown('### Survey Results')
+    ], style={'textAlign': 'center'}),
     dash_table.DataTable(
         id='results_table',
         columns=[        {'name': 'Question', 'id': 'question'},        {'name': 'Answer', 'id': 'answer'}    ],
