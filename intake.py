@@ -4,6 +4,13 @@ from dash import html
 import dash_table
 from dash.dependencies import Input, Output, State
 import pandas as pd
+import openai
+import os
+
+from dotenv import load_dotenv
+load_dotenv()
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
 # import pdfkit
 # import smtplib
 # from email.mime.multipart import MIMEMultipart
@@ -16,7 +23,7 @@ app.config.suppress_callback_exceptions = True
 server = app.server
 
 style = {
-    'padding': '3em',
+    'padding': '3.5em',
     'backgroundColor': '#e3d8df',  
     'fontFamily': 'Arial, sans-serif'
 }
@@ -281,12 +288,23 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         type='text',
         value=''),
     html.P([html.Br()]),  
-
-  html.Br(),
-    html.Button('Submit', id='submit_button', n_clicks=0),
+    html.Div(className="d-grid gap-2", children=[
+        dcc.Loading(id="loading", type="circle", children=[
+            html.Button("Submit", id="submit_button", n_clicks=0, className="btn btn-lg btn-primary")
+        ]),
+    ]),
     html.Br(),
+    html.Div([
+        html.Div([
+            html.Div('GPT-3.5-turbo Summary', className='card-header'),
+            html.Div([
+                html.H4('Radiation Oncology Patient Symptom Summary', className='card-title'),
+                html.P(id='summary', className='card-text')
+            ], className='card-body')
+        ], className='card border-primary mb-3', style={'max-width': '60rem', 'margin': '3 auto'})
+    ], className='summary-container mx-auto', style={'width': '60%'}),
     html.Br(),
-    dcc.Markdown('### Survey Results'),
+    dcc.Markdown('### Survey Results'), #aligned to center of page
     dash_table.DataTable(
         id='results_table',
         columns=[        {'name': 'Question', 'id': 'question'},        {'name': 'Answer', 'id': 'answer'}    ],
@@ -309,7 +327,9 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
     html.P([html.Br()])
     ], style=style)
 
+
 @app.callback(
+    Output('summary', 'children'),
     Output('results_table', 'data'),
     Input('submit_button', 'n_clicks'),
     State('number_of_treatments', 'value'),
@@ -329,11 +349,11 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
     State('radiation_skin_reaction_severity', 'value'),
     State('fatigue_severity', 'value'),
     State('fatigue_interference', 'value'),
-    State('additional_symptoms', 'value')
+    State('additional_symptoms', 'value'),
 )
 def update_results_table(n_clicks, *responses):
     if n_clicks == 0:
-        return []
+        return None, []
 
     questions = [
         'Number of Radiation treatments',
@@ -341,25 +361,25 @@ def update_results_table(n_clicks, *responses):
         'Diarrhea frequency',
         'Abdominal pain frequency',
         'Abdominal pain severity',
-        'Abdominal pain interference',
+        'Abdominal pain with ADL',
         'Painful urination severity',
         'Urinary urgency frequency',
-        'Urinary urgency interference',
+        'Urinary urgency with ADL',
         'Urinary frequency',
-        'Urinary frequency interference',
+        'Urinary frequency with ADL',
         'Urine color change',
         'Urinary incontinence frequency',
-        'Urinary incontinence interference',
+        'Urinary incontinence with ADL',
         'Radiation skin reaction severity',
         'Fatigue severity',
-        'Fatigue interference',
+        'Fatigue with ADL',
         'Additional symptoms',
     ]
 
     data = [{'question': question, 'answer': response} for question, response in zip(questions, responses)]
 
-    return data
-
+    summary = summarize_table(data)
+    return summary, data
 
     # Convert data to a Pandas DataFrame
     df = pd.DataFrame(data)
@@ -375,6 +395,33 @@ def update_results_table(n_clicks, *responses):
     # #send_email("recipient@example.com", "table.pdf")
 
     return data
+def summarize_table(data):
+    messages = [{
+        'role': 'system',
+        'content': "You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into one sentence of natural language for your physician colleagues. Please put most important symptoms first. Example - This patient's most severe symptom is their very severe abdominal pain. Aside from this, the patient is also experiencing occasional diarrhea. :"
+    }]
+    
+    for row in data:
+        messages.append({
+            'role': 'user',
+            'content': f"{row['question']}: {row['answer']}"
+        })
+    
+    messages.append({
+        'role': 'assistant',
+        'content': "Summary:"
+    })
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        n=1,
+        stop=None,
+        temperature=0.2,
+    )
+
+    summary = response.choices[0].message.content.strip()
+    return summary
 
 # def send_email(to_email, pdf_file):
 #     from_email = "you@example.com"  # Your email address. 
