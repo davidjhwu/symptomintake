@@ -287,7 +287,7 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         placeholder='Type here...',
         type='text',
         value=''),
-    html.P([html.Br()]),  
+    html.P([html.Br()]),
     html.Div(className="d-grid gap-2 d-flex justify-content-center", children=[
         dcc.Loading(id="loading", type="circle", children=[
             html.Button("Submit", id="submit_button", n_clicks=0, className="btn btn-lg btn-primary", style={"width": "200px"})
@@ -296,7 +296,7 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
     html.Br(),
     html.Div([
         html.Div([
-            html.Div('GPT-3.5-turbo Summary', className='card-header'),
+            html.Div('GPT 4', className='card-header'),
             html.Div([
                 html.H4('Radiation Oncology Patient Symptom Summary', className='card-title'),
                 html.P(id='summary', className='card-text')
@@ -400,7 +400,7 @@ def update_results_table(n_clicks, *responses):
 def summarize_table(data):
     messages = [{
         'role': 'system',
-        'content': "You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into one sentence of natural language for your physician colleagues. Please put most important symptoms first. Example - This patient's most severe symptom is their very severe abdominal pain. Aside from this, the patient is also experiencing occasional diarrhea. :"
+        'content': "You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into two sentences of natural language for your physician colleagues. You may use relevant medical abbreviations. Please put most important symptoms first. Example - Pt with 7 radiation tx's is having severe abd pain, moderately affecting ADLs. Other sx include occasional diarrhea, mild rash.:"
     }]
     
     for row in data:
@@ -415,7 +415,7 @@ def summarize_table(data):
     })
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=messages,
         n=1,
         stop=None,
