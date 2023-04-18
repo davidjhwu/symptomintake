@@ -1,11 +1,12 @@
 import dash
-from dash import dcc
-from dash import html
+from dash import dcc, html
 import dash_table
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 import pandas as pd
 import openai
 import os
+import dash_bootstrap_components as dbc
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -16,7 +17,10 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # from email.mime.multipart import MIMEMultipart
 # from email.mime.base import MIMEBase
 # from email import encoders
-external_stylesheets = ['https://maxcdn.bootstrapcdn.com/bootswatch/4.5.2/journal/bootstrap.min.css']
+external_stylesheets = [
+    'https://maxcdn.bootstrapcdn.com/bootswatch/4.5.2/journal/bootstrap.min.css',
+    dbc.themes.BOOTSTRAP
+]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.config.suppress_callback_exceptions = True
@@ -24,9 +28,70 @@ server = app.server
 
 style = {
     'padding': '3.5em',
-    'backgroundColor': '#e3d8df',  
+    'backgroundColor': '#FFFFFF',  
     'fontFamily': 'Arial, sans-serif'
 }
+
+#Mapping for severity score of responses
+
+severity_colors = {
+    "None": '#008000',
+    "Not at all": '#008000',
+    "Never": '#008000',
+    "Mild": '#90ee90',
+    "A little bit": '#90ee90',
+    "Rarely": '#90ee90',
+    "Moderate": '#ffff00',
+    "Somewhat": '#ffff00',
+    "Occasionally": '#ffff00',
+    "Severe": '#ffa500',
+    "Quite a bit": '#ffa500',
+    "Frequently": '#ffa500',
+    "Very severe": '#ff0000',
+    "Very much": '#ff0000',
+    "Almost constantly": '#ff0000',
+    "Yes": '#008000',
+    "No": '#ff0000',
+}
+
+def create_data_table():
+    style_data_conditional = []
+
+    for response, color in severity_colors.items():
+        text_color = 'white' if color != '#ffff00' else 'black'
+        style_data_conditional.append({
+            'if': {
+                'filter_query': '{{answer}} = "{}"'.format(response),
+                'column_id': 'answer'
+            },
+            'backgroundColor': color,
+            'color': text_color
+        })
+
+    return dash_table.DataTable(
+        id='results_table',
+        columns=[
+            {'name': 'Question', 'id': 'question'},
+            {'name': 'Answer', 'id': 'answer'},
+        ],
+        data=[],
+        style_cell={
+            'whiteSpace': 'normal',
+            'height': 'auto',
+            'textAlign': 'center',
+            'border': 'none',
+        },
+        style_header={
+            'backgroundColor': 'rgb(230, 230, 230)',
+            'fontWeight': 'bold',
+            'border': 'none',
+        },
+        style_table={
+            'margin': '0 auto',
+            'width': '50%'
+        },
+        style_data_conditional=style_data_conditional
+    )
 
 app.layout = html.Div([
 dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
@@ -43,21 +108,49 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
   html.P([html.Br()]),
   dcc.Markdown('### Symptom Questions'),
   dcc.Markdown('For each of the following question I\'m going to ask you to grade your symptoms.'),
+      dcc.Markdown("#### Fatigue"),
+    dcc.Markdown(
+        "###### In the last 7 days, what was the SEVERITY of your FATIGUE, TIREDNESS, OR LACK OF ENERGY at its WORST?"
+    ),
+    dcc.Dropdown(
+        id="fatigue_severity",
+        options=[
+            {"label": "None", "value": "None"},
+            {"label": "Mild", "value": "Mild"},
+            {"label": "Moderate", "value": "Moderate"},
+            {"label": "Severe", "value": "Severe"},
+            {"label": "Very severe", "value": "Very severe"},
+        ],
+        value=None,
+    ),
+
+    dcc.Markdown(
+        "###### In the last 7 days, how much did FATIGUE, TIREDNESS, OR LACK OF ENERGY INTERFERE with your usual or daily activities?"
+    ),
+    dcc.Dropdown(
+        id="fatigue_interference",
+        options=[
+            {"label": "Not at all", "value": "Not at all"},
+            {"label": "A little bit", "value": "A little bit"},
+            {"label": "Somewhat", "value": "Somewhat"},
+            {"label": "Quite a bit", "value": "Quite a bit"},
+        ],
+        value=None,
+    ),
+    html.P([html.Br()]),
   dcc.Markdown('#### Gas'),
     dcc.Markdown('###### In the last 7 days, did you have any INCREASED PASSING OF GAS (FLATULENCE)?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='gas',
         options=[
             {'label': 'Yes', 'value': 'Yes'},
             {'label': 'No', 'value': 'No'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'},
-        inline=True
     ),
   dcc.Markdown('#### Diarrhea'),      
   dcc.Markdown('###### In the last 7 days, how OFTEN did you have LOOSE OR WATERY STOOLS (DIARRHEA)?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
     id='diarrhea_frequency',
     options=[
         {'label': 'Never', 'value': 'Never'},
@@ -67,12 +160,11 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         {'label': 'Almost constantly', 'value': 'Almost constantly'}
     ],
     value=None,
-    labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('#### Abdominal Pain'),
     dcc.Markdown('###### In the last 7 days, how OFTEN did you have PAIN IN THE ABDOMEN (BELLY AREA)?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='abdominal_pain_frequency',
         options=[
             {'label': 'Never', 'value': 'Never'},
@@ -82,11 +174,10 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Almost constantly', 'value': 'Almost Constantly'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('###### In the last 7 days, what was the SEVERITY of your PAIN IN THE ABDOMEN (BELLY AREA) at its WORST?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='abdominal_pain_severity',
         options=[
             {'label': 'None', 'value': 'None'},
@@ -96,11 +187,10 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Very severe', 'value': 'Very severe'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('###### In the last 7 days, how much did PAIN IN THE ABDOMEN (BELLY AREA) INTERFERE with your usual or daily activities?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='abdominal_pain_adl',
         options=[
             {'label': 'Not at all', 'value': 'Not at all'},
@@ -110,14 +200,13 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Very much', 'value': 'Very much'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
   html.P([html.Br()]),
   dcc.Markdown('Now let\'s discuss your urinary symptoms.'),
   dcc.Markdown('#### Urinary Symptoms'),
     dcc.Markdown('##### Painful Urination'),
     dcc.Markdown('###### In the last 7 days, what was the SEVERITY of your PAIN OR BURNING WITH URINATION at its WORST?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='painful_urination_severity',
         options=[
             {'label': 'None', 'value': 'None'},
@@ -127,12 +216,11 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Very severe', 'value': 'Very severe'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('##### Urinary Urgency'),
     dcc.Markdown('###### In the last 7 days, how OFTEN did you feel an URGE TO URINATE ALL OF A SUDDEN?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urinary_urgency_frequency',
         options=[
             {'label': 'Never', 'value': 'Never'},
@@ -142,11 +230,10 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Almost constantly', 'value': 'Almost constantly'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('###### In the last 7 days, how much did SUDDEN URGES TO URINATE INTERFERE with your usual or daily activities?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urinary_urgency_adl',
         options=[
             {'label': 'Not at all', 'value': 'Not at all'},
@@ -156,12 +243,11 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Very much', 'value': 'Very much'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('##### Urinary Frequency'),
     dcc.Markdown('###### In the last 7 days, were there times when you had to URINATE FREQUENTLY?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urinary_frequency',
         options=[
             {'label': 'Never', 'value': 'Never'},
@@ -171,11 +257,10 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Almost constantly', 'value': 'Almost constantly'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('###### In the last 7 days, how much did FREQUENT URINATION INTERFERE with your usual or daily activities?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urinary_frequency_interference',
         options=[
             {'label': 'Not at all', 'value': 'Not at all'},
@@ -185,24 +270,22 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Very much', 'value': 'Very much'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('##### Change in Usual Urine Color'),
     dcc.Markdown('###### In the last 7 days, did you have any URINE COLOR CHANGE?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urine_color_change',
         options=[
             {'label': 'Yes', 'value': 'Yes'},
             {'label': 'No', 'value': 'No'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('##### Urinary Incontinence'),
     dcc.Markdown('###### In the last 7 days, how OFTEN did you have LOSS OF CONTROL OF URINE (LEAKAGE)?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urinary_incontinence_frequency',
         options=[
             {'label': 'Never', 'value': 'Never'},
@@ -213,11 +296,10 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Almost constantly', 'value': 'Almost constantly'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
 
     dcc.Markdown('###### In the last 7 days, how much did LOSS OF CONTROL OF URINE (LEAKAGE) INTERFERE with your usual or daily activities?'),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id='urinary_incontinence_interference',
         options=[
             {'label': 'Not at all', 'value': 'Not at all'},
@@ -227,14 +309,13 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {'label': 'Very much', 'value': 'Very much'}
         ],
         value=None,
-        labelStyle={'display': 'inline-block', 'margin-right': '10px'}
     ),
     html.P([html.Br()]),
     dcc.Markdown("#### Radiation Skin Reaction"),
     dcc.Markdown(
         "###### In the last 7 days, what was the SEVERITY of your SKIN BURNS FROM RADIATION at their WORST?"
     ),
-    dcc.RadioItems(
+    dcc.Dropdown(
         id="radiation_skin_reaction_severity",
         options=[
             {"label": "None", "value": "None"},
@@ -245,39 +326,6 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
             {"label": "Not applicable", "value": "Not applicable"},
         ],
         value=None,
-        labelStyle={"display": "inline-block", "margin-right": "10px"},
-    ),
-    html.P([html.Br()]),
-    dcc.Markdown("#### Fatigue"),
-    dcc.Markdown(
-        "###### In the last 7 days, what was the SEVERITY of your FATIGUE, TIREDNESS, OR LACK OF ENERGY at its WORST?"
-    ),
-    dcc.RadioItems(
-        id="fatigue_severity",
-        options=[
-            {"label": "None", "value": "None"},
-            {"label": "Mild", "value": "Mild"},
-            {"label": "Moderate", "value": "Moderate"},
-            {"label": "Severe", "value": "Severe"},
-            {"label": "Very severe", "value": "Very severe"},
-        ],
-        value=None,
-        labelStyle={"display": "inline-block", "margin-right": "10px"},
-    ),
-
-    dcc.Markdown(
-        "###### In the last 7 days, how much did FATIGUE, TIREDNESS, OR LACK OF ENERGY INTERFERE with your usual or daily activities?"
-    ),
-    dcc.RadioItems(
-        id="fatigue_interference",
-        options=[
-            {"label": "Not at all", "value": "Not at all"},
-            {"label": "A little bit", "value": "A little bit"},
-            {"label": "Somewhat", "value": "Somewhat"},
-            {"label": "Quite a bit", "value": "Quite a bit"},
-        ],
-        value=None,
-        labelStyle={"display": "inline-block", "margin-right": "10px"},
     ),
     html.P([html.Br()]),
     dcc.Markdown('#### Last Question!'),
@@ -297,38 +345,20 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
     html.Div([
         html.Div([
             html.Div('GPT 4', className='card-header'),
-            html.Div([
-                html.H4('Radiation Oncology Patient Symptom Summary', className='card-title'),
-                html.P(id='summary', className='card-text')
-            ], className='card-body')
+            dcc.Loading(id="loading-summary", type="circle", children=[
+                html.Div([
+                    html.H4('Radiation Oncology Patient Symptom Summary', className='card-title'),
+                    html.P(id='summary', className='card-text')
+                ], className='card-body')
+            ])
         ], className='card border-primary mb-3', style={'max-width': '60rem', 'margin': '3 auto'})
     ], className='summary-container mx-auto', style={'width': '60%'}),
     html.Br(),
     html.Div([
         dcc.Markdown('### Survey Results')
     ], style={'textAlign': 'center'}),
-    dash_table.DataTable(
-        id='results_table',
-        columns=[        {'name': 'Question', 'id': 'question'},        {'name': 'Answer', 'id': 'answer'}    ],
-        data=[],
-        style_cell={
-            'whiteSpace': 'normal',
-            'height': 'auto',
-            'textAlign': 'center',
-        },
-        style_data_conditional=[        {            'if': {'row_index': 'odd'},            'backgroundColor': 'rgb(248, 248, 248)'        }    ],
-        style_header={
-            'backgroundColor': 'rgb(230, 230, 230)',
-            'fontWeight': 'bold'
-        },
-        style_table={
-            'margin': '0 auto',
-            'width': '50%'
-        }
-    ),
-    html.P([html.Br()])
-    ], style=style)
-
+    create_data_table(),
+        ], style=style)
 
 @app.callback(
     Output('summary', 'children'),
@@ -353,7 +383,7 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
     State('fatigue_interference', 'value'),
     State('additional_symptoms', 'value'),
 )
-def update_results_table(n_clicks, *responses):
+def update_table_results(n_clicks, *responses):
     if n_clicks == 0:
         return None, []
 
@@ -400,7 +430,7 @@ def update_results_table(n_clicks, *responses):
 def summarize_table(data):
     messages = [{
         'role': 'system',
-        'content': "You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into two sentences of natural language for your physician colleagues. You may use relevant medical abbreviations. Please put most important symptoms first. Example - Pt with 7 radiation tx's is having severe abd pain, moderately affecting ADLs. Other sx include occasional diarrhea, mild rash.:"
+        'content': "You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into two sentences of natural language for your physician colleagues. Please put most important symptoms first. Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
     }]
     
     for row in data:
@@ -415,7 +445,7 @@ def summarize_table(data):
     })
 
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo",
         messages=messages,
         n=1,
         stop=None,
@@ -424,6 +454,7 @@ def summarize_table(data):
 
     summary = response.choices[0].message.content.strip()
     return summary
+
 
 # def send_email(to_email, pdf_file):
 #     from_email = "you@example.com"  # Your email address. 
