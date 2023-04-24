@@ -50,8 +50,8 @@ severity_colors = {
     "Very severe": '#ff0000',
     "Very much": '#ff0000',
     "Almost constantly": '#ff0000',
-    "Yes": '#008000',
-    "No": '#ff0000',
+    "No": '#008000',
+    "Yes": '#ff0000',
 }
 
 def create_data_table():
@@ -336,6 +336,18 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         type='text',
         value=''),
     html.P([html.Br()]),
+    dcc.Markdown(
+        "###### Summarization Language"
+    ),
+    dcc.Dropdown(
+        id="language",
+        options=[
+            {"label": "English", "value": "English"},
+            {"label": "French", "value": "French"},
+            {"label": "Emoji", "value": "Emoji"},
+        ],
+        value=None,
+    ),
     html.Div(className="d-grid gap-2 d-flex justify-content-center", children=[
         dcc.Loading(id="loading", type="circle", children=[
             html.Button("Submit", id="submit_button", n_clicks=0, className="btn btn-lg btn-primary", style={"width": "200px"})
@@ -382,6 +394,7 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
     State('fatigue_severity', 'value'),
     State('fatigue_interference', 'value'),
     State('additional_symptoms', 'value'),
+    State('language', 'value'),
 )
 def update_table_results(n_clicks, *responses):
     if n_clicks == 0:
@@ -409,28 +422,14 @@ def update_table_results(n_clicks, *responses):
     ]
 
     data = [{'question': question, 'answer': response} for question, response in zip(questions, responses)]
-
-    summary = summarize_table(data)
+    language = responses[-1]
+    summary = summarize_table(data,language)
     return summary, data
 
-    # Convert data to a Pandas DataFrame
-    df = pd.DataFrame(data)
-    '''below is for pdf stuff'''
-    # # Export DataFrame to an HTML file
-    # with open("table.html", "w") as file:
-    #     file.write(df.to_html(index=False))
-
-    # # Convert the HTML file to a PDF
-    # pdfkit.from_file("table.html", "table.pdf")
-
-    # # Email the PDF file
-    # #send_email("recipient@example.com", "table.pdf")
-
-    return data
-def summarize_table(data):
+def summarize_table(data, language):
     messages = [{
         'role': 'system',
-        'content': "You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into two sentences of natural language for your physician colleagues. Please put most important symptoms first. Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
+        'content': f"You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please summarize the following data into two sentences of natural language for your physician colleagues. Please put most important symptoms first. Provide the summarization in the {language} language. English Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
     }]
     
     for row in data:
@@ -445,7 +444,7 @@ def summarize_table(data):
     })
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=messages,
         n=1,
         stop=None,
@@ -454,32 +453,6 @@ def summarize_table(data):
 
     summary = response.choices[0].message.content.strip()
     return summary
-
-
-# def send_email(to_email, pdf_file):
-#     from_email = "you@example.com"  # Your email address. 
-#     password = "your_password"  # Your email password. Can consider using SendGrid for better security.
-
-#     # Create a multipart email message
-#     msg = MIMEMultipart()
-#     msg["From"] = from_email
-#     msg["To"] = to_email
-#     msg["Subject"] = "Patient Symptom Table PDF"
-
-#     # Attach the PDF file
-#     with open(pdf_file, "rb") as file:
-#         attachment = MIMEBase("application", "octet-stream")
-#         attachment.set_payload(file.read())
-#         encoders.encode_base64(attachment)
-#         attachment.add_header("Content-Disposition", f"attachment; filename={pdf_file}")
-#         msg.attach(attachment)
-
-#     # Send the email
-#     server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-#     server.login(from_email, password)
-#     server.sendmail(from_email, to_email, msg.as_string())
-#     server.quit()
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
