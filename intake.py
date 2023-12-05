@@ -93,11 +93,16 @@ def create_data_table():
         style_data_conditional=style_data_conditional
     )
 
+
 app.layout = html.Div([
-dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
+#dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
+html.P([html.Img(src='assets/logo.png', style={'width' : '100%', 'margin-bottom': '0px', 'margin-top': '20px'})]),
+  html.P([html.Br()]),  
+  dcc.Markdown('This app is a proof-of-concept developed to grade and summarize prostate cancer radiation therapy toxicity using PRO-CTCAE and ChatGPT.'),
   html.P([html.Br()]),
   dcc.Markdown('#### Please answer the following questions about your current symptoms'),
-  dcc.Markdown('Each form must be carefully filled out, results will be sent to your physician'),
+  dcc.Markdown('Each form must be carefully filled out'),
+  html.P([html.Br()]),
   dcc.Markdown('#### General Questions'),
   dcc.Markdown('###### How many radiation treatments have you had? It\'s okay if you don\'t know.'),
   dcc.Input(
