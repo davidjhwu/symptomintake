@@ -344,7 +344,7 @@ dcc.Markdown('# Prostate Radiotherapy Patient Symptom Intake Form'),
         options=[
             {"label": "English", "value": "English"},
             {"label": "French", "value": "French"},
-            {"label": "Emoji", "value": "Emoji"},
+            {"label": "Portuguese", "value": "Portuguese"},
         ],
         value=None,
     ),
