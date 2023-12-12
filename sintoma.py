@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+gpt_model = os.getenv("gpt_model")
+
 # import pdfkit
 # import smtplib
 # from email.mime.multipart import MIMEMultipart
@@ -446,7 +448,7 @@ def summarize_table(data, language):
     })
 
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model=gpt_model,
         messages=messages,
         n=1,
         stop=None,
