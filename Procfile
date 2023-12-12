@@ -1,1 +1,1 @@
-web: gunicorn intake:server -t 120
+web: gunicorn sintoma:server -t 120
