@@ -1,10 +1,6 @@
 gunicorn
-dash==2.3.1
-dash-core-components==2.0.0
-dash-html-components==2.0.0
-dash-table==5.0.0
-pandas==1.2.4
-pdfkit==1.0.0
-openai==0.27.0
-python-dotenv==0.19.2
-dash_bootstrap_components==1.4.1
+dash
+pandas
+openai==0.28
+python-dotenv
+dash-bootstrap-components

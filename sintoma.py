@@ -330,18 +330,7 @@ dcc.Input(
     type='text',
     value=''),
 html.P([html.Br()]),
-dcc.Markdown(
-    "###### Idioma da Sumarização"
-),
-dcc.Dropdown(
-    id="language",
-    options=[
-        {"label": "Inglês", "value": "Inglês"},
-        {"label": "Francês", "value": "Francês"},
-        {"label": "Português", "value": "Português"},
-    ],
-    value=None,
-),
+
 html.Div(className="d-grid gap-2 d-flex justify-content-center", children=[
     dcc.Loading(id="loading", type="circle", children=[
         html.Button("Enviar", id="submit_button", n_clicks=0, className="btn btn-lg btn-primary", style={"width": "200px"})
@@ -398,7 +387,6 @@ dcc.Markdown("""#### Sobre"""),
     State('fatigue_severity', 'value'),
     State('fatigue_interference', 'value'),
     State('additional_symptoms', 'value'),
-    State('language', 'value'),
 )
 def update_table_results(n_clicks, *responses):
     if n_clicks == 0:
@@ -426,14 +414,13 @@ def update_table_results(n_clicks, *responses):
     ]
 
     data = [{'question': question, 'answer': response} for question, response in zip(questions, responses)]
-    language = responses[-1]
-    summary = summarize_table(data, language)
+    summary = summarize_table(data)
     return summary, data
 
-def summarize_table(data, language):
+def summarize_table(data):
     messages = [{
         'role': 'system',
-        'content': f"You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please take a deep breath, think step-by-step, and summarize the following data into three sentences of natural language for your physician colleagues. Please put the most important symptoms first. Provide the summarization in the {language} language. English Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
+        'content': f"You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please take a deep breath, think step-by-step, and summarize the following data into three sentences of natural language for your physician colleagues. Please put the most important symptoms first. Provide the summarization in the Brazilian Portuguese language. English Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
     }]
     
     for row in data:
