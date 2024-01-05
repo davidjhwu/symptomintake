@@ -102,6 +102,16 @@ html.P([html.Br()]),
 dcc.Markdown('#### Por favor, responda às seguintes perguntas sobre seus sintomas atuais'),
 dcc.Markdown('Cada formulário deve ser preenchido com cuidado, os resultados serão enviados ao seu médico'),
 dcc.Markdown('#### Perguntas Gerais'),
+dcc.RadioItems(
+    id='gender',
+    options=[
+        {'label': 'Masculino', 'value': 'Masculino'},
+        {'label': 'Feminino', 'value': 'Feminino'},
+        {'label': 'Outro', 'value': 'Outro'}
+    ],
+    value=None,
+    labelStyle={'display': 'inline-block', 'margin-right': '20px'}
+),
 dcc.Markdown('###### Quantos tratamentos de radiação você já fez? Tudo bem se você não souber.'),
 dcc.Input(
     id='number_of_treatments',
@@ -380,6 +390,7 @@ dcc.Markdown("""#### Sobre"""),
     Output('summary', 'children'),
     Output('results_table', 'data'),
     Input('submit_button', 'n_clicks'),
+    State('gender', 'value'),
     State('number_of_treatments', 'value'),
     State('gas', 'value'),
     State('diarrhea_frequency', 'value'),
@@ -405,6 +416,7 @@ def update_table_results(n_clicks, *responses):
         return None, []
 
     questions = [
+        'Gênero', 
         'Número de tratamentos de radiação',
         'Aumento na emissão de gases',
         'Frequência de diarreia',
@@ -433,7 +445,7 @@ def update_table_results(n_clicks, *responses):
 def summarize_table(data, language):
     messages = [{
         'role': 'system',
-        'content': f"You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please take a deep breath, think step-by-step, and summarize the following data into three sentences of natural language for your physician colleagues. Please put the most important symptoms first. Provide the summarization in the {language} language. English Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
+        'content': f"You are an experienced radiation oncologist physician. You are provided this table of patient symptoms during their weekly follow-up visit during radiotherapy. Please take a deep breath, think step-by-step, and summarize the following data into three sentences of natural language for your physician colleagues. Please put the most important symptoms first. You do not need to explicitly state the gender of the patient, conjugating it in the language requested is enough. Provide the summarization in the {language} language. English Example - This patient with 7 radiation treatments is having severe abdominal pain, moderately affecting activities of daily living. Other symptoms include occasional diarrhea, mild rash.:"
     }]
     
     for row in data:
